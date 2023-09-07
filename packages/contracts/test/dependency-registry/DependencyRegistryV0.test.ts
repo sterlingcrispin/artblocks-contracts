@@ -723,11 +723,11 @@ describe(`DependencyRegistryV0`, async function () {
         this.timeout(600000); // Set timeout to 10 minutes for this test
 
         const fileNames = [
-          // "zdog.dist.min.js",
-          // "LGPL-2.1.txt",
-          // "14.8.15.tonejs.js",
-          // "aframe-v1.2.0.min.js",
-          // "Apache2.md",
+          "zdog.dist.min.js",
+          "LGPL-2.1.txt",
+          "14.8.15.tonejs.js",
+          "aframe-v1.2.0.min.js",
+          "Apache2.md",
           "babylon5.js",
           "libraries and licenses.txt",
           "MITLicense.txt",
