@@ -1,0 +1,12 @@
+p5.min.js 1.0 -  LGPL-2.1.txt
+processing-js-1.4.6 - custom
+aframe-v1.2.0.min.js - MIT
+three.min.js - MIT
+babylon 5.0 - Apache2
+vox ?
+megavox ?
+regl2.1.0.min.js - MIT
+tonejs - MIT
+twemoji - mit
+paper-full.min.js - MIT custom
+zdog - MIT

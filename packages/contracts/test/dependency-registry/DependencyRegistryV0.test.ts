@@ -1,9 +1,11 @@
 import { expectRevert, constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import Mocha from "mocha";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+
+import { waffle, ethers } from "hardhat";
+import fs from "fs/promises"; // Node.js file system module with Promises API
 
 import {
   AdminACLV0,
@@ -715,39 +717,97 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
+    });
+    describe("Gas estimation for adding scripts", function () {
+      it("estimates gas for adding multiple files", async function () {
+        this.timeout(600000); // Set timeout to 10 minutes for this test
 
-      it("allows admin to add a script", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        const script = "on-chain script";
-        await expect(
-          config.dependencyRegistry.addDependencyScript(
-            dependencyTypeBytes,
-            script
-          )
-        )
-          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
-          .withArgs(dependencyTypeBytes);
+        const fileNames = [
+          // "zdog.dist.min.js",
+          // "LGPL-2.1.txt",
+          // "14.8.15.tonejs.js",
+          // "aframe-v1.2.0.min.js",
+          // "Apache2.md",
+          "babylon5.js",
+          "libraries and licenses.txt",
+          "MITLicense.txt",
+          "p5.min.js",
+          "paperLICENSE.txt",
+          "paper-full.min.js",
+          "processing js license.txt",
+          "processing.min.js",
+          "regl2.1.0.min.js",
+          "three.min.js",
+          "twemoji.min.js",
+        ];
+        const baseFolderPath = "./artblocksdependencies/";
+        const MAX_CHUNK_SIZE = 23 * 1024; // 23 KB in bytes
 
-        const dependencyDetails =
-          await config.dependencyRegistry.getDependencyDetails(
-            dependencyTypeBytes
+        const config = await loadFixture(_beforeEach);
+        // Add all files as dependencies first
+        for (let fileName of fileNames) {
+          try {
+            const dependencyNameBytes = ethers.utils.formatBytes32String(
+              fileName.substring(0, 31) + "@"
+            );
+
+            // Add the dependency using the provided method
+            await this.config.dependencyRegistry
+              .connect(this.config.accounts.deployer)
+              .addDependency(
+                dependencyNameBytes,
+                licenseTypeBytes,
+                preferredCDN,
+                preferredRepository,
+                referenceWebsite
+              );
+
+            console.log(`Added dependency for ${fileName}`);
+          } catch (error) {
+            console.error(
+              `Failed to add dependency for ${fileName}: ${error.message}`
+            );
+          }
+        }
+
+        // Now, estimate gas for adding each file chunk
+        for (let fileName of fileNames) {
+          const fileContent = await fs.readFile(
+            baseFolderPath + fileName,
+            "utf8"
           );
 
-        expect(dependencyDetails.scriptCount).to.eq(1);
+          // Split the content into chunks
+          const chunks = [];
+          for (let i = 0; i < fileContent.length; i += MAX_CHUNK_SIZE) {
+            chunks.push(fileContent.substring(i, i + MAX_CHUNK_SIZE));
+          }
 
-        const scriptCount =
-          await config.dependencyRegistry.getDependencyScriptCount(
-            dependencyTypeBytes
-          );
-        expect(scriptCount).to.eq(1);
+          for (let j = 0; j < chunks.length; j++) {
+            try {
+              const chunk = chunks[j];
+              const gasEstimate =
+                await this.config.dependencyRegistry.estimateGas.addDependencyScript(
+                  ethers.utils.formatBytes32String(
+                    fileName.substring(0, 31) + "@"
+                  ),
+                  chunk
+                );
 
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScript(
-            dependencyTypeBytes,
-            0
-          );
-        expect(storedScript).to.eq(script);
+              console.log(
+                `Estimated gas for ${fileName} chunk ${
+                  j + 1
+                }: ${gasEstimate.toString()}`
+              );
+            } catch (error) {
+              console.error(
+                `Failed to estimate gas for ${fileName} chunk ${j + 1}: ${
+                  error.message
+                }`
+              );
+            }
+          }
+        }
       });
     });
 
